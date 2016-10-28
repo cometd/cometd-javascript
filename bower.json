@@ -1,0 +1,18 @@
+{
+  "name": "cometd",
+  "description": "Comet and WebSocket library for web messaging",
+  "main": "cometd.js",
+  "license": "Apache-2.0",
+  "keywords": [
+    "comet",
+    "websocket",
+    "messaging",
+    "pubsub",
+    "publish",
+    "subscribe",
+    "rpc",
+    "p2p",
+    "peer-to-peer"
+  ],
+  "homepage": "https://cometd.org"
+}

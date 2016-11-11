@@ -13,17 +13,26 @@ to use CometD with NPM.
 
 The CometD source code is released under the Apache 2.0 License.
 
-### Installation
+### NPM Installation
 
 ```
 npm install cometd
 ```
 
-### Usage
+### CommonJS Usage
 
 ```javascript
+// Obtain the CometD APIs.
 var lib = require('cometd');
+
+// Create the CometD object.
 var cometd = new lib.CometD();
+
+// Optionally, obtain an extension and register it.
+var TimeStampExtension = require('cometd/TimeStampExtension');
+cometd.registerExtension('timestamp', new TimeStampExtension());
+
+// Configure the CometD object.
 cometd.configure({
     url: 'http://host/cometd'
 });
@@ -33,9 +42,46 @@ cometd.handshake(function(h) {
     if (h.successful) {
         // Subscribe to receive messages from the server.
         cometd.subscribe('/topic', function(m) {
-            var dataFromServer = message.data;
+            var dataFromServer = m.data;
             // Use dataFromServer.
         });
     }
+});
+```
+
+### Bower installation
+
+```javascript
+bower install cometd
+```
+
+### AMD Usage
+
+```javascript
+require({
+    paths: {
+      'cometd': 'bower_components/cometd'
+    }
+}, ['cometd/cometd', 'cometd/TimeStampExtension'], function(lib, TimeStampExtension) {
+    var cometd = new lib.CometD();
+  
+    // Optionally, install an extension.
+    cometd.registerExtension('timestamp', new TimeStampExtension());
+    
+    // Configure the CometD object.
+    cometd.configure({
+        url: 'http://host/cometd'
+    });
+    
+    // Handshake with the server.
+    cometd.handshake(function(h) {
+        if (h.successful) {
+            // Subscribe to receive messages from the server.
+            cometd.subscribe('/topic', function(m) {
+                var dataFromServer = m.data;
+                // Use dataFromServer.
+            });
+        }
+    });
 });
 ```

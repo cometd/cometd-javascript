@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* CometD Version 3.1.0-RC0 */
+/* CometD Version 3.1.0-RC1 */
 
 (function(root, factory){
     if (typeof exports === 'object') {
@@ -499,10 +499,11 @@
                     }
                 }
             }
-            if (_metaConnectRequest) {
-                this._debug('Aborting metaConnect request', _metaConnectRequest);
-                if (!this.abortXHR(_metaConnectRequest.xhr)) {
-                    this.transportFailure(_metaConnectRequest.envelope, _metaConnectRequest, {reason: 'abort'});
+            var metaConnectRequest = _metaConnectRequest;
+            if (metaConnectRequest) {
+                this._debug('Aborting metaConnect request', metaConnectRequest);
+                if (!this.abortXHR(metaConnectRequest.xhr)) {
+                    this.transportFailure(metaConnectRequest.envelope, metaConnectRequest, {reason: 'abort'});
                 }
             }
             this.reset(true);

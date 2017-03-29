@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* CometD Version 3.1.2-BETA0 */
+/* CometD Version 3.1.2-BETA1 */
 
 (function(root, factory){
     if (typeof exports === 'object') {
@@ -519,7 +519,7 @@
                 try {
                     var state = xhr.readyState;
                     xhr.abort();
-                    return state !== XMLHttpRequest.UNSENT;
+                    return state !== window.XMLHttpRequest.UNSENT;
                 } catch (x) {
                     this._debug(x);
                 }
@@ -553,7 +553,7 @@
         };
 
         _self.xhrSend = function(packet) {
-            var xhr = new XMLHttpRequest();
+            var xhr = new window.XMLHttpRequest();
             xhr.withCredentials = true;
             xhr.open('POST', packet.url, packet.sync !== true);
             var headers = packet.headers;
@@ -1216,7 +1216,6 @@
             backoffIncrement: 1000,
             maxBackoff: 60000,
             logLevel: 'info',
-            reverseIncomingExtensions: true,
             maxNetworkDelay: 10000,
             requestHeaders: {},
             appendMessageTypeToURL: true,
@@ -1361,7 +1360,12 @@
          * @return whether the given hostAndPort is cross domain
          */
         this._isCrossDomain = function(hostAndPort) {
-            return hostAndPort && hostAndPort !== window.location.host;
+            if (window.location && window.location.host) {
+                if (hostAndPort) {
+                    return hostAndPort !== window.location.host;
+                }
+            }
+            return false;
         };
 
         function _configure(configuration) {
@@ -1481,8 +1485,7 @@
                     break;
                 }
 
-                var index = _config.reverseIncomingExtensions ? _extensions.length - 1 - i : i;
-                var extension = _extensions[index];
+                var extension = _extensions[i];
                 var callback = extension.extension.incoming;
                 if (_isFunction(callback)) {
                     var result = _applyExtension(extension.extension, callback, extension.name, message, false);
@@ -1493,7 +1496,7 @@
         }
 
         function _applyOutgoingExtensions(message) {
-            for (var i = 0; i < _extensions.length; ++i) {
+            for (var i = _extensions.length - 1; i >= 0 ; --i) {
                 if (message === undefined || message === null) {
                     break;
                 }

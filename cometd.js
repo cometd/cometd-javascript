@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* CometD Version 3.1.2-BETA1 */
+/* CometD Version 3.1.2-RC0 */
 
 (function(root, factory){
     if (typeof exports === 'object') {
@@ -1803,8 +1803,10 @@
             // Reset the transports if we're not retrying the handshake
             if (_isDisconnected()) {
                 _transports.reset(true);
-                _updateAdvice(_config.advice);
             }
+
+            // Reset the advice.
+            _updateAdvice({});
 
             _batch = 0;
 

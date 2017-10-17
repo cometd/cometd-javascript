@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* CometD Version 3.1.2 */
+/* CometD Version 3.1.3 */
 
 (function(root, factory){
     if (typeof exports === 'object') {
@@ -685,7 +685,7 @@
             var url = packet.url;
             url += url.indexOf('?') < 0 ? '?' : '&';
             url += 'jsonp=' + callbackName;
-            url += '&message=' + packet.body;
+            url += '&message=' + encodeURIComponent(packet.body);
             script.src = url;
             script.async = packet.sync !== true;
             script.type = 'application/javascript';

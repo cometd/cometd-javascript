@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2017 the original author or authors.
+ * Copyright (c) 2008-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* CometD Version 4.0.0-BETA1 */
+/* CometD Version 3.1.4 */
 
 (function(root, factory){
     if (typeof exports === 'object') {
@@ -1586,11 +1586,12 @@
 
         /**
          * Delivers the messages to the CometD server
+         * @param sync whether the send is synchronous
          * @param messages the array of messages to send
          * @param metaConnect true if this send is on /meta/connect
          * @param extraPath an extra path to append to the Bayeux server URL
          */
-        function _send(messages, metaConnect, extraPath) {
+        function _send(sync, messages, metaConnect, extraPath) {
             // We must be sure that the messages have a clientId.
             // This is not guaranteed since the handshake may take time to return
             // (and hence the clientId is not known yet) and the application
@@ -1631,7 +1632,7 @@
 
             var envelope = {
                 url: url,
-                sync: false,
+                sync: sync,
                 messages: messages,
                 onSuccess: function(rcvdMessages) {
                     try {
@@ -1658,7 +1659,7 @@
             if (_batch > 0 || _internalBatch === true) {
                 _messageQueue.push(message);
             } else {
-                _send([message], false);
+                _send(false, [message], false);
             }
         }
 
@@ -1695,7 +1696,7 @@
             var messages = _messageQueue;
             _messageQueue = [];
             if (messages.length > 0) {
-                _send(messages, false);
+                _send(false, messages, false);
             }
         }
 
@@ -1738,7 +1739,7 @@
 
                 _setStatus('connecting');
                 _cometd._debug('Connect sent', bayeuxMessage);
-                _send([bayeuxMessage], true, 'connect');
+                _send(false, [bayeuxMessage], true, 'connect');
                 _setStatus('connected');
             }
         }
@@ -1869,7 +1870,7 @@
             // so here we must bypass it and send immediately.
             _setStatus('handshaking');
             _cometd._debug('Handshake sent', message);
-            _send([message], false, 'handshake');
+            _send(false, [message], false, 'handshake');
         }
 
         function _delayedHandshake(delay) {
@@ -2552,14 +2553,23 @@
 
         /**
          * Disconnects from the Bayeux server.
+         * It is possible to suggest to attempt a synchronous disconnect, but this feature
+         * may only be available in certain transports (for example, long-polling may support
+         * it, callback-polling certainly does not).
+         * @param sync whether attempt to perform a synchronous disconnect
          * @param disconnectProps an object to be merged with the disconnect message
          * @param disconnectCallback a function to be invoked when the disconnect is acknowledged
          */
-        this.disconnect = function(disconnectProps, disconnectCallback) {
+        this.disconnect = function(sync, disconnectProps, disconnectCallback) {
             if (_isDisconnected()) {
                 return;
             }
 
+            if (typeof sync !== 'boolean') {
+                disconnectCallback = disconnectProps;
+                disconnectProps = sync;
+                sync = false;
+            }
             if (_isFunction(disconnectProps)) {
                 disconnectCallback = disconnectProps;
                 disconnectProps = undefined;
@@ -2576,7 +2586,7 @@
             _cometd._putCallback(message.id, disconnectCallback);
 
             _setStatus('disconnecting');
-            _send([message], false, 'disconnect');
+            _send(sync === true, [message], false, 'disconnect');
         };
 
         /**

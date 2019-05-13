@@ -14,21 +14,27 @@
  * limitations under the License.
  */
 
-/* CometD Version 4.0.3 */
+/* CometD Version 3.1.9 */
 
 (function(root, factory) {
+    var runtime = this['cometdRuntime'];
+    if (!runtime) {
+        runtime = window;
+    }
     if (typeof exports === 'object') {
         // CommonJS.
-        module.exports = factory();
+        module.exports = factory(runtime);
     } else if (typeof define === 'function' && define.amd) {
         // AMD.
-        define([], factory);
+        define([], function() {
+            return factory(runtime);
+        });
     } else {
         // Globals.
         root.org = root.org || {};
-        root.org.cometd = factory();
+        root.org.cometd = factory(runtime);
     }
-}(this, function() {
+}(this, function(runtime) {
     /**
      * Browsers may throttle the Window scheduler,
      * so we may replace it with a Worker scheduler.
@@ -47,10 +53,10 @@
             return funktion;
         };
         this.setTimeout = function(funktion, delay) {
-            return window.setTimeout(funktion, delay);
+            return runtime.setTimeout(funktion, delay);
         };
         this.clearTimeout = function(id) {
-            window.clearTimeout(id);
+            runtime.clearTimeout(id);
         };
     };
 
@@ -559,7 +565,7 @@
                 try {
                     var state = xhr.readyState;
                     xhr.abort();
-                    return state !== window.XMLHttpRequest.UNSENT;
+                    return state !== runtime.XMLHttpRequest.UNSENT;
                 } catch (x) {
                     this._debug(x);
                 }
@@ -593,7 +599,7 @@
         };
 
         _self.newXMLHttpRequest = function() {
-            return new window.XMLHttpRequest();
+            return new runtime.XMLHttpRequest();
         };
 
         _self.xhrSend = function(packet) {
@@ -716,9 +722,9 @@
             var script = document.createElement('script');
 
             var callbackName = '_cometd_jsonp_' + jsonp++;
-            window[callbackName] = function(responseText) {
+            runtime[callbackName] = function(responseText) {
                 head.removeChild(script);
-                delete window[callbackName];
+                delete runtime[callbackName];
                 packet.onSuccess(responseText);
             };
 
@@ -928,7 +934,7 @@
 
             try {
                 var protocol = _cometd.getConfiguration().protocol;
-                context.webSocket = protocol ? new window.WebSocket(url, protocol) : new window.WebSocket(url);
+                context.webSocket = protocol ? new runtime.WebSocket(url, protocol) : new runtime.WebSocket(url);
                 _connecting = context;
             } catch (x) {
                 _webSocketSupported = false;
@@ -1195,7 +1201,7 @@
         _self.accept = function(version, crossDomain, url) {
             this._debug('Transport', this.getType(), 'accept, supported:', _webSocketSupported);
             // Using !! to return a boolean (and not the WebSocket object).
-            return _webSocketSupported && !!window.WebSocket && _cometd.websocketEnabled !== false;
+            return _webSocketSupported && !!runtime.WebSocket && _cometd.websocketEnabled !== false;
         };
 
         _self.send = function(envelope, metaConnect) {
@@ -1359,13 +1365,13 @@
         }
 
         function _log(level, args) {
-            if (window.console) {
-                var logger = window.console[level];
+            if (runtime.console) {
+                var logger = runtime.console[level];
                 if (_isFunction(logger)) {
                     var now = new Date();
                     [].splice.call(args, 0, 0, _zeroPad(now.getHours(), 2) + ':' + _zeroPad(now.getMinutes(), 2) + ':' +
                         _zeroPad(now.getSeconds(), 2) + '.' + _zeroPad(now.getMilliseconds(), 3));
-                    logger.apply(window.console, args);
+                    logger.apply(runtime.console, args);
                 }
             }
         }
@@ -1409,9 +1415,9 @@
          * @return whether the given hostAndPort is cross domain
          */
         this._isCrossDomain = function(hostAndPort) {
-            if (window.location && window.location.host) {
+            if (runtime.location && runtime.location.host) {
                 if (hostAndPort) {
-                    return hostAndPort !== window.location.host;
+                    return hostAndPort !== runtime.location.host;
                 }
             }
             return false;
@@ -1463,15 +1469,15 @@
                 }
             }
 
-            if (window.Worker && window.Blob && window.URL && _config.useWorkerScheduler) {
+            if (runtime.Worker && runtime.Blob && runtime.URL && _config.useWorkerScheduler) {
                 var code = WorkerScheduler.toString();
                 // Remove the function declaration, the opening brace and the closing brace.
                 code = code.substring(code.indexOf('{') + 1, code.lastIndexOf('}'));
-                var blob = new window.Blob([code], {
+                var blob = new runtime.Blob([code], {
                     type: 'application/json'
                 });
-                var blobURL = window.URL.createObjectURL(blob);
-                var worker = new window.Worker(blobURL);
+                var blobURL = runtime.URL.createObjectURL(blob);
+                var worker = new runtime.Worker(blobURL);
                 _scheduler.setTimeout = function(funktion, delay) {
                     var id = _scheduler.register(funktion);
                     worker.postMessage({
@@ -1665,11 +1671,12 @@
 
         /**
          * Delivers the messages to the CometD server
+         * @param sync whether the send is synchronous
          * @param messages the array of messages to send
          * @param metaConnect true if this send is on /meta/connect
          * @param extraPath an extra path to append to the Bayeux server URL
          */
-        function _send(messages, metaConnect, extraPath) {
+        function _send(sync, messages, metaConnect, extraPath) {
             // We must be sure that the messages have a clientId.
             // This is not guaranteed since the handshake may take time to return
             // (and hence the clientId is not known yet) and the application
@@ -1714,7 +1721,7 @@
 
             var envelope = {
                 url: url,
-                sync: false,
+                sync: sync,
                 messages: messages,
                 onSuccess: function(rcvdMessages) {
                     try {
@@ -1741,7 +1748,7 @@
             if (_batch > 0 || _internalBatch === true) {
                 _messageQueue.push(message);
             } else {
-                _send([message], false);
+                _send(false, [message], false);
             }
         }
 
@@ -1778,7 +1785,7 @@
             var messages = _messageQueue;
             _messageQueue = [];
             if (messages.length > 0) {
-                _send(messages, false);
+                _send(false, messages, false);
             }
         }
 
@@ -1823,7 +1830,7 @@
 
                 _setStatus('connecting');
                 _cometd._debug('Connect sent', bayeuxMessage);
-                _send([bayeuxMessage], true, 'connect');
+                _send(false, [bayeuxMessage], true, 'connect');
                 _setStatus('connected');
             }
         }
@@ -1957,7 +1964,7 @@
             // so here we must bypass it and send immediately.
             _setStatus('handshaking');
             _cometd._debug('Handshake sent', message);
-            _send([message], false, 'handshake');
+            _send(false, [message], false, 'handshake');
         }
 
         function _delayedHandshake(delay) {
@@ -2657,14 +2664,23 @@
 
         /**
          * Disconnects from the Bayeux server.
+         * It is possible to suggest to attempt a synchronous disconnect, but this feature
+         * may only be available in certain transports (for example, long-polling may support
+         * it, callback-polling certainly does not).
+         * @param sync whether attempt to perform a synchronous disconnect
          * @param disconnectProps an object to be merged with the disconnect message
          * @param disconnectCallback a function to be invoked when the disconnect is acknowledged
          */
-        this.disconnect = function(disconnectProps, disconnectCallback) {
+        this.disconnect = function(sync, disconnectProps, disconnectCallback) {
             if (_isDisconnected()) {
                 return;
             }
 
+            if (typeof sync !== 'boolean') {
+                disconnectCallback = disconnectProps;
+                disconnectProps = sync;
+                sync = false;
+            }
             if (_isFunction(disconnectProps)) {
                 disconnectCallback = disconnectProps;
                 disconnectProps = undefined;
@@ -2681,7 +2697,7 @@
             _cometd._putCallback(message.id, disconnectCallback);
 
             _setStatus('disconnecting');
-            _send([message], false, 'disconnect');
+            _send(sync === true, [message], false, 'disconnect');
         };
 
         /**
@@ -3290,7 +3306,7 @@
         };
 
         // Initialize transports.
-        if (window.WebSocket) {
+        if (runtime.WebSocket) {
             this.registerTransport('websocket', new WebSocketTransport());
         }
         this.registerTransport('long-polling', new LongPollingTransport());

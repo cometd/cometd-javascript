@@ -1,0 +1,7 @@
+# Development
+*.ipr
+*.iws
+*.iml
+.idea/
+
+node_modules/

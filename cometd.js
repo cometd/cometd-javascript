@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* CometD Version 5.0.0 */
+/* CometD Version 5.0.1 */
 
 (function(root, factory) {
     if (typeof exports === 'object') {
@@ -893,7 +893,9 @@
                 _webSocketConnected = false;
             }
             _stickyReconnect = true;
-            _context = null;
+            if (init) {
+                _context = null;
+            }
             _connecting = null;
             _connected = false;
         };

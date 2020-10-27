@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* CometD Version 5.0.1 */
+/* CometD Version 5.0.2 */
 
 (function(root, factory) {
     if (typeof exports === 'object') {
@@ -238,8 +238,30 @@
             _cometd = null;
         };
 
+        this._notifyTransportTimeout = function(messages) {
+            var callbacks = _cometd._getTransportListeners('timeout');
+            if (callbacks) {
+                for (var i = 0; i < callbacks.length; ++i) {
+                    var listener = callbacks[i];
+                    try {
+                        var result = listener.call(this, messages);
+                        if (typeof result === 'number' && result > 0) {
+                            return result;
+                        }
+                    } catch (x) {
+                        this._info('Exception during execution of transport listener', listener, x);
+                    }
+                }
+            }
+            return 0;
+        }
+
         this._debug = function() {
             _cometd._debug.apply(_cometd, arguments);
+        };
+
+        this._info = function() {
+            _cometd._info.apply(_cometd, arguments);
         };
 
         this._mixin = function() {
@@ -373,32 +395,44 @@
             }
         }
 
+        function _onTransportTimeout(envelope, request, delay) {
+            var result = this._notifyTransportTimeout(envelope.messages);
+            if (result > 0) {
+                this._debug('Transport', this.getType(), 'extended waiting for message replies of request', request.id, ':', result, 'ms');
+                var self = this;
+                request.timeout = this.setTimeout(function() {
+                    _onTransportTimeout.call(self, envelope, request, delay + result);
+                }, result);
+            } else {
+                request.expired = true;
+                var errorMessage = 'Transport ' + this.getType() + ' expired waiting for message replies of request ' + request.id + ': ' + delay + ' ms';
+                var failure = {
+                    reason: errorMessage
+                };
+                var xhr = request.xhr;
+                failure.httpCode = this.xhrStatus(xhr);
+                this.abortXHR(xhr);
+                this._debug(errorMessage);
+                this.complete(request, false, request.metaConnect);
+                envelope.onFailure(xhr, envelope.messages, failure);
+            }
+        }
+
         function _transportSend(envelope, request) {
             this.transportSend(envelope, request);
             request.expired = false;
 
             if (!envelope.sync) {
-                var maxDelay = this.getConfiguration().maxNetworkDelay;
-                var delay = maxDelay;
+                var delay = this.getConfiguration().maxNetworkDelay;
                 if (request.metaConnect === true) {
                     delay += this.getAdvice().timeout;
                 }
 
-                this._debug('Transport', this.getType(), 'waiting at most', delay, 'ms for the response, maxNetworkDelay', maxDelay);
+                this._debug('Transport', this.getType(), 'started waiting for message replies of request', request.id, ':', delay, 'ms');
 
                 var self = this;
                 request.timeout = this.setTimeout(function() {
-                    request.expired = true;
-                    var errorMessage = 'Request ' + request.id + ' of transport ' + self.getType() + ' exceeded ' + delay + ' ms max network delay';
-                    var failure = {
-                        reason: errorMessage
-                    };
-                    var xhr = request.xhr;
-                    failure.httpCode = self.xhrStatus(xhr);
-                    self.abortXHR(xhr);
-                    self._debug(errorMessage);
-                    self.complete(request, false, request.metaConnect);
-                    envelope.onFailure(xhr, envelope.messages, failure);
+                    _onTransportTimeout.call(self, envelope, request, delay);
                 }, delay);
             }
         }
@@ -484,6 +518,7 @@
         _self.transportSuccess = function(envelope, request, responses) {
             if (!request.expired) {
                 this.clearTimeout(request.timeout);
+                this._debug('Transport', this.getType(), 'cancelled waiting for message replies');
                 this.complete(request, true, request.metaConnect);
                 if (responses && responses.length > 0) {
                     envelope.onSuccess(responses);
@@ -498,6 +533,7 @@
         _self.transportFailure = function(envelope, request, failure) {
             if (!request.expired) {
                 this.clearTimeout(request.timeout);
+                this._debug('Transport', this.getType(), 'cancelled waiting for failed message replies');
                 this.complete(request, false, request.metaConnect);
                 envelope.onFailure(request.xhr, envelope.messages, failure);
             }
@@ -1011,14 +1047,27 @@
             this._debug('Transport', this.getType(), 'configured callbacks on', context);
         }
 
+        function _onTransportTimeout(context, message, delay) {
+            var result = this._notifyTransportTimeout([message]);
+            if (result > 0) {
+                this._debug('Transport', this.getType(), 'extended waiting for message replies:', result, 'ms');
+                var self = this;
+                context.timeouts[message.id] = this.setTimeout(function() {
+                    _onTransportTimeout.call(self, context, message, delay + result);
+                }, result);
+            } else {
+                this._debug('Transport', this.getType(), 'expired waiting for message reply', message.id, ':', delay, 'ms');
+                _forceClose.call(this, context, {code: 1000, reason: 'Message Timeout'});
+            }
+        }
+
         function _webSocketSend(context, envelope, metaConnect) {
             var json = JSON.stringify(envelope.messages);
             context.webSocket.send(json);
             this._debug('Transport', this.getType(), 'sent', envelope, '/meta/connect =', metaConnect);
 
             // Manage the timeout waiting for the response.
-            var maxDelay = this.getConfiguration().maxNetworkDelay;
-            var delay = maxDelay;
+            var delay = this.getConfiguration().maxNetworkDelay;
             if (metaConnect) {
                 delay += this.getAdvice().timeout;
                 _connected = true;
@@ -1032,14 +1081,13 @@
                     if (message.id) {
                         messageIds.push(message.id);
                         context.timeouts[message.id] = self.setTimeout(function() {
-                            _cometd._debug('Transport', self.getType(), 'timing out message', message.id, 'after', delay, 'on', context);
-                            _forceClose.call(self, context, {code: 1000, reason: 'Message Timeout'});
+                            _onTransportTimeout.call(self, context, message, delay);
                         }, delay);
                     }
                 })();
             }
 
-            this._debug('Transport', this.getType(), 'waiting at most', delay, 'ms for messages', messageIds, 'maxNetworkDelay', maxDelay, ', timeouts:', context.timeouts);
+            this._debug('Transport', this.getType(), 'started waiting for message replies', delay, 'ms, messageIds:', messageIds, ', timeouts:', context.timeouts);
         }
 
         _self._notifySuccess = function(fn, messages) {
@@ -1256,6 +1304,7 @@
         var _internalBatch = false;
         var _listenerId = 0;
         var _listeners = {};
+        var _transportListeners = {};
         var _backoff = 0;
         var _scheduledSend = null;
         var _extensions = [];
@@ -1350,6 +1399,61 @@
 
         function _isString(value) {
             return Utils.isString(value);
+        }
+
+        function _isAlpha(char) {
+            if (char >= 'A' && char <= 'Z') {
+                return true;
+            }
+            return char >= 'a' && char <= 'z';
+        }
+
+        function _isNumeric(char) {
+            return char >= '0' && char <= '9';
+        }
+
+        function _isAllowed(char) {
+            switch (char) {
+                case ' ':
+                case '!':
+                case '#':
+                case '$':
+                case '(':
+                case ')':
+                case '*':
+                case '+':
+                case '-':
+                case '.':
+                case '/':
+                case '@':
+                case '_':
+                case '{':
+                case '~':
+                case '}':
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        function _isValidChannel(value) {
+            if (!_isString(value)) {
+                return false;
+            }
+            if (value.length < 2) {
+                return false;
+            }
+            if (value.charAt(0) !== '/') {
+                return false;
+            }
+            for (var i = 1; i < value.length; ++i) {
+                var char = value.charAt(i);
+                if (_isAlpha(char) || _isNumeric(char) || _isAllowed(char)) {
+                    continue;
+                }
+                return false;
+            }
+            return true;
         }
 
         function _isFunction(value) {
@@ -2741,6 +2845,57 @@
         };
 
         /**
+         * Adds a transport listener for the specified transport event,
+         * executing the given callback when the event happens.
+         *
+         * The currently supported event is `timeout`.
+         *
+         * The callback function takes an array of messages for which
+         * the event happened.
+         *
+         * For the 'timeout' event, the callback function may return a
+         * positive value that extends the wait for message replies by
+         * the returned amount, in milliseconds.
+         *
+         * @param {String} event the type of transport event
+         * @param {Function} callback the function associate to the given transport event
+         * @see #removeTransportListener
+         */
+        this.addTransportListener = function(event, callback) {
+            if (event !== 'timeout') {
+                throw 'Unsupported event ' + event;
+            }
+            var callbacks = _transportListeners[event];
+            if (!callbacks) {
+                _transportListeners[event] = callbacks = [];
+            }
+            callbacks.push(callback);
+        }
+
+        /**
+         * Removes the transport listener for the specified transport event.
+         * @param {String} event the type of transport event
+         * @param {Function} callback the function disassociate from the given transport event
+         * @return {boolean} whether the disassociation was successful
+         * @see #addTransportListener
+         */
+        this.removeTransportListener = function(event, callback) {
+            var callbacks = _transportListeners[event];
+            if (callbacks) {
+                var index = callbacks.indexOf(callback);
+                if (index >= 0) {
+                    callbacks.splice(index, 1);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        this._getTransportListeners = function(event) {
+            return _transportListeners[event];
+        }
+
+        /**
          * Adds a listener for bayeux messages, performing the given callback in the given scope
          * when a message for the given channel arrives.
          * @param channel the channel the listener is interested to
@@ -2796,8 +2951,8 @@
             if (arguments.length < 2) {
                 throw 'Illegal arguments number: required 2, got ' + arguments.length;
             }
-            if (!_isString(channel)) {
-                throw 'Illegal argument type: channel must be a string';
+            if (!_isValidChannel(channel)) {
+                throw 'Illegal argument: invalid channel ' + channel;
             }
             if (_isDisconnected()) {
                 throw 'Illegal state: disconnected';
@@ -2836,6 +2991,18 @@
                 _cometd._putCallback(message.id, subscribeCallback);
 
                 _queueSend(message);
+            } else {
+                if (_isFunction(subscribeCallback)) {
+                    // Keep the semantic that the callback is notified asynchronously.
+                    _cometd.setTimeout(function() {
+                        _notifyCallback(subscribeCallback, {
+                            id: _nextMessageId(),
+                            successful: true,
+                            channel: '/meta/subscribe',
+                            subscription: channel
+                        });
+                    }, 0);
+                }
             }
 
             return subscription;
@@ -2879,6 +3046,18 @@
                 _cometd._putCallback(message.id, unsubscribeCallback);
 
                 _queueSend(message);
+            } else {
+                if (_isFunction(unsubscribeCallback)) {
+                    // Keep the semantic that the callback is notified asynchronously.
+                    _cometd.setTimeout(function() {
+                        _notifyCallback(unsubscribeCallback, {
+                            id: _nextMessageId(),
+                            successful: true,
+                            channel: '/meta/unsubscribe',
+                            subscription: channel
+                        });
+                    }, 0);
+                }
             }
         };
 
@@ -2909,8 +3088,8 @@
             if (arguments.length < 1) {
                 throw 'Illegal arguments number: required 1, got ' + arguments.length;
             }
-            if (!_isString(channel)) {
-                throw 'Illegal argument type: channel must be a string';
+            if (!_isValidChannel(channel)) {
+                throw 'Illegal argument: invalid channel ' + channel;
             }
             if (/^\/meta\//.test(channel)) {
                 throw 'Illegal argument: cannot publish to meta channels';
@@ -3014,6 +3193,9 @@
                 target = '/' + target;
             }
             var channel = '/service' + target;
+            if (!_isValidChannel(channel)) {
+                throw 'Illegal argument: invalid target ' + target;
+            }
 
             var bayeuxMessage = {
                 id: _nextMessageId(),

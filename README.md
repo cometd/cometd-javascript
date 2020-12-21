@@ -9,6 +9,15 @@ Those JavaScript sources are not suitable to be consumed with NPM,
 and are therefore re-arranged in this repository for to make it simpler
 to use CometD with NPM.
 
+### Versions
+
+`5.0.x` &#8658; based on CometD 5.0.x - minimal ECMAScript 5 (`var` everywhere)  
+`6.0.x` &#8658; N/A  
+`7.0.x` &#8658; based on CometD 7.0.x - minimal ECMAScript 6 (`let`, `const` and arrow functions)
+
+Version `6.0.x` is not released to NPM since it's identical to `7.0.x`.  
+The `6.0.x` numbering exists only because the main CometD project, on the server side, is different from `7.0.x`, but on the client side there is no difference.
+
 ### License
 
 The CometD source code is released under the Apache 2.0 License.

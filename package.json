@@ -1,6 +1,6 @@
 {
   "name": "cometd",
-  "version": "5.0.9",
+  "version": "5.0.10",
   "description": "Comet and WebSocket library for web messaging",
   "keywords": ["comet", "websocket", "messaging", "pubsub", "publish", "subscribe", "rpc", "p2p", "peer-to-peer"],
   "homepage": "https://cometd.org",
@@ -9,6 +9,7 @@
   },
   "license": "Apache-2.0",
   "main": "cometd.js",
+  "types": "cometd.d.ts",
   "repository": {
     "type": "git",
     "url": "https://github.com/cometd/cometd.git"

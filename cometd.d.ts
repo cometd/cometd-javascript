@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2021 the original author or authors.
+ * Copyright (c) 2008-2022 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,7 @@
 export interface Transport {
     readonly type: string;
     url: string;
-
     accept(version: string, crossDomain: boolean, url: string): boolean;
-}
-
-export interface LongPollingTransport extends Transport {
-}
-
-export interface CallbackPollingTransport extends Transport {
-}
-
-export interface WebSocketTransport extends Transport {
 }
 
 export interface TransportRegistry {
@@ -212,17 +202,17 @@ export interface Z85 {
     decode(string: string): ArrayBuffer;
 }
 
-export interface AckExtension extends Extension {
+export class AckExtension implements Extension {
 }
 
-export interface BinaryExtension extends Extension {
+export class BinaryExtension implements Extension {
 }
 
-export interface ReloadExtension extends Extension {
+export class ReloadExtension implements Extension {
 }
 
-export interface TimeStampExtension extends Extension {
+export class TimeStampExtension implements Extension {
 }
 
-export interface TimeSyncExtension extends Extension {
+export class TimeSyncExtension implements Extension {
 }

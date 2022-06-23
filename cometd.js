@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* CometD Version 5.0.11 */
+/* CometD Version 5.0.12 */
 
 (function(root, factory) {
     if (typeof exports === 'object') {
@@ -659,7 +659,7 @@
             } catch (e) {
                 // May happen if XHR is wrapped by Object.seal(),
                 // Object.freeze(), or Object.preventExtensions().
-                this._debug('Could not copy transport context into XHR', e);
+                _self._debug('Could not copy transport context into XHR', e);
             }
         }
 

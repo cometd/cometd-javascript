@@ -1,6 +1,6 @@
 {
   "name": "cometd",
-  "version": "5.0.12",
+  "version": "5.0.13",
   "description": "Comet and WebSocket library for web messaging",
   "keywords": ["comet", "websocket", "messaging", "pubsub", "publish", "subscribe", "rpc", "p2p", "peer-to-peer"],
   "homepage": "https://cometd.org",

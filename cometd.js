@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* CometD Version 7.0.9 */
+/* CometD Version 7.0.10 */
 
 (((root, factory) => {
     if (typeof exports === 'object') {

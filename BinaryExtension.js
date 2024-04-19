@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2022 the original author or authors.
+ * Copyright (c) 2008 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,45 +14,38 @@
  * limitations under the License.
  */
 
-(((root, factory) => {
-    if (typeof exports === 'object') {
-        module.exports = factory(require('./cometd'));
-    } else if (typeof define === 'function' && define.amd) {
-        define(['./cometd'], factory);
-    } else {
-        factory(root.org.cometd);
-    }
-})(this, cometdModule => {
-    /**
-     * Client-side extension that converts binary JavaScript objects
-     * (ArrayBuffer, DataView and TypedArrays) into a textual
-     * representation suitable for JSON, using the Z85 algorithm.
-     */
-    return cometdModule.BinaryExtension = function() {
-        this.incoming = message => {
-            if (!/^\/meta\//.test(message.channel)) {
-                const ext = message.ext;
-                if (ext) {
-                    const binaryExt = ext.binary;
-                    if (binaryExt) {
-                        message.data.data = cometdModule.Z85.decode(message.data.data);
-                    }
-                }
-            }
-            return message;
-        };
+import {Extension} from "./Extension.js";
+import {Z85} from "./Z85.js";
 
-        this.outgoing = message => {
-            if (!/^\/meta\//.test(message.channel)) {
-                const ext = message.ext;
-                if (ext) {
-                    const binaryExt = ext.binary;
-                    if (binaryExt) {
-                        message.data.data = cometdModule.Z85.encode(message.data.data);
-                    }
+/**
+ * Client-side extension that converts binary JavaScript objects
+ * (ArrayBuffer, DataView and TypedArrays) into a textual
+ * representation suitable for JSON, using the Z85 algorithm.
+ */
+export class BinaryExtension extends Extension {
+    incoming(message) {
+        if (!/^\/meta\//.test(message.channel)) {
+            const ext = message.ext;
+            if (ext) {
+                const binaryExt = ext.binary;
+                if (binaryExt) {
+                    message.data.data = Z85.decode(message.data.data);
                 }
             }
-            return message;
         }
-    }
-}));
+        return message;
+    };
+
+    outgoing(message) {
+        if (!/^\/meta\//.test(message.channel)) {
+            const ext = message.ext;
+            if (ext) {
+                const binaryExt = ext.binary;
+                if (binaryExt) {
+                    message.data.data = Z85.encode(message.data.data);
+                }
+            }
+        }
+        return message;
+    };
+}

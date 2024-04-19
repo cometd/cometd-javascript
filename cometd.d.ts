@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2022 the original author or authors.
+ * Copyright (c) 2008 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,9 @@
 export interface Transport {
     readonly type: string;
     url: string;
+
     accept(version: string, crossDomain: boolean, url: string): boolean;
+    abort(): void;
 }
 
 export interface TransportRegistry {
@@ -33,8 +35,8 @@ export interface TransportRegistry {
 export interface Advice {
     interval?: number;
     maxInterval?: number;
-    'multiple-clients'?: boolean;
-    reconnect?: 'retry' | 'handshake' | 'none';
+    "multiple-clients"?: boolean;
+    reconnect?: "retry" | "handshake" | "none";
     timeout?: number;
     hosts?: string[];
 }
@@ -59,7 +61,7 @@ export interface Message {
 
 export type Callback = (message: Message) => void;
 
-export type LogLevel = 'warn' | 'info' | 'debug';
+export type LogLevel = "warn" | "info" | "debug";
 
 export interface Configuration {
     url: string;
@@ -87,12 +89,13 @@ export interface ListenerHandle {
 export interface SubscriptionHandle {
 }
 
-export type Status = 'disconnected' | 'handshaking' | 'connecting' | 'connected' | 'disconnecting';
+export type Status = "disconnected" | "handshaking" | "connecting" | "connected" | "disconnecting";
 
 export interface Extension {
     incoming?(message: Message): Message | null;
-
     outgoing?(message: Message): Message | null;
+    registered?(name: string, cometd: CometD): void;
+    unregistered?(): void;
 }
 
 export class CometD {
@@ -110,7 +113,7 @@ export class CometD {
 
     getTransportRegistry(): TransportRegistry;
 
-    configure(options: Configuration): void;
+    configure(options: Configuration | string): void;
 
     handshake(handshakeCallback?: Callback): void;
     handshake(handshakeProps: object, handshakeCallback?: Callback): void;

@@ -11,9 +11,10 @@ to use CometD with NPM.
 
 ### Versions
 
-`5.0.x` &#8658; based on CometD 5.0.x - minimal ECMAScript 5 (`var` everywhere)  
-`6.0.x` &#8658; N/A  
+`8.0.x` &#8658; based on CometD 8.0.x - full ECMAScript 6 (modules, classes, `let`, `const`, arrow functions)
 `7.0.x` &#8658; based on CometD 7.0.x - minimal ECMAScript 6 (`let`, `const` and arrow functions)
+`6.0.x` &#8658; N/A
+`5.0.x` &#8658; based on CometD 5.0.x - minimal ECMAScript 5 (`var` everywhere)
 
 Version `6.0.x` is not released to NPM since it's identical to `7.0.x`.  
 The `6.0.x` numbering exists only because the main CometD project, on the server side, is different from `7.0.x`, but on the client side there is no difference.
@@ -28,29 +29,59 @@ The CometD source code is released under the Apache 2.0 License.
 npm install cometd
 ```
 
+### ES6 Usage
+
+```js
+// Import the CometD symbols.
+import {CometD} from "./cometd/cometd.js";
+import {TimeStampExtension} from "./cometd/TimeStampExtension.js";
+
+// Create the CometD object.
+const cometd = new CometD();
+
+// Optionally, register an extension.
+cometd.registerExtension("timestamp", new TimeStampExtension());
+
+// Configure the CometD object.
+cometd.configure({
+    url: "http://host/cometd"
+});
+
+// Handshake with the server.
+cometd.handshake((reply) => {
+    if (reply.successful) {
+        // Subscribe to receive messages from the server.
+        cometd.subscribe("/topic", (message) => {
+            const dataFromServer = message.data;
+            // Use dataFromServer.
+        });
+    }
+});
+```
+
 ### CommonJS Usage
 
-```javascript
+```js
 // Obtain the CometD APIs.
-var lib = require('cometd');
+var lib = require("cometd");
 
 // Create the CometD object.
 var cometd = new lib.CometD();
 
 // Optionally, obtain an extension and register it.
-var TimeStampExtension = require('cometd/TimeStampExtension');
-cometd.registerExtension('timestamp', new TimeStampExtension());
+var TimeStampExtension = require("cometd/TimeStampExtension");
+cometd.registerExtension("timestamp", new TimeStampExtension());
 
 // Configure the CometD object.
 cometd.configure({
-    url: 'http://host/cometd'
+    url: "http://host/cometd"
 });
 
 // Handshake with the server.
 cometd.handshake(function(h) {
     if (h.successful) {
         // Subscribe to receive messages from the server.
-        cometd.subscribe('/topic', function(m) {
+        cometd.subscribe("/topic", function(m) {
             var dataFromServer = m.data;
             // Use dataFromServer.
         });
@@ -60,33 +91,33 @@ cometd.handshake(function(h) {
 
 ### Bower installation
 
-```javascript
+```
 bower install cometd
 ```
 
 ### AMD Usage
 
-```javascript
+```js
 require({
     paths: {
-      'cometd': 'bower_components/cometd'
+      "cometd": "bower_components/cometd"
     }
-}, ['cometd/cometd', 'cometd/TimeStampExtension'], function(lib, TimeStampExtension) {
+}, ["cometd/cometd", "cometd/TimeStampExtension"], function(lib, TimeStampExtension) {
     var cometd = new lib.CometD();
   
     // Optionally, install an extension.
-    cometd.registerExtension('timestamp', new TimeStampExtension());
+    cometd.registerExtension("timestamp", new TimeStampExtension());
     
     // Configure the CometD object.
     cometd.configure({
-        url: 'http://host/cometd'
+        url: "http://host/cometd"
     });
     
     // Handshake with the server.
     cometd.handshake(function(h) {
         if (h.successful) {
             // Subscribe to receive messages from the server.
-            cometd.subscribe('/topic', function(m) {
+            cometd.subscribe("/topic", function(m) {
                 var dataFromServer = m.data;
                 // Use dataFromServer.
             });

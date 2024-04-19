@@ -14,4 +14,29 @@
  * limitations under the License.
  */
 
-export {CometD} from "./Client.js";
+/**
+ * Base class for CometD extensions.
+ */
+export class Extension {
+    #cometd;
+
+    registered(name, cometd) {
+        this.#cometd = cometd;
+    }
+
+    unregistered() {
+        this.#cometd = null;
+    }
+
+    get cometd() {
+        return this.#cometd;
+    }
+
+    incoming(message) {
+        return message;
+    }
+
+    outgoing(message) {
+        return message;
+    }
+}

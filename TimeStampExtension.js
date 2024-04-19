@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008-2022 the original author or authors.
+ * Copyright (c) 2008 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,14 @@
  * limitations under the License.
  */
 
-(((root, factory) => {
-    if (typeof exports === 'object') {
-        module.exports = factory(require('./cometd'));
-    } else if (typeof define === 'function' && define.amd) {
-        define(['./cometd'], factory);
-    } else {
-        factory(root.org.cometd);
-    }
-})(this, cometdModule => {
-    // The timestamp extension adds the optional timestamp field to all outgoing messages.
-    return cometdModule.TimeStampExtension = function() {
-        this.outgoing = message => {
-            message.timestamp = new Date().toUTCString();
-            return message;
-        };
+import {Extension} from "./Extension.js";
+
+/**
+ * The timestamp extension adds the optional timestamp field to all outgoing messages.
+ */
+export class TimeStampExtension extends Extension {
+    outgoing(message) {
+        message.timestamp = new Date().toUTCString();
+        return message;
     };
-}));
+}

@@ -11,10 +11,10 @@ to use CometD with NPM.
 
 ### Versions
 
-`8.0.x` &#8658; based on CometD 8.0.x - full ECMAScript 6 (modules, classes, `let`, `const`, arrow functions)
-`7.0.x` &#8658; based on CometD 7.0.x - minimal ECMAScript 6 (`let`, `const` and arrow functions)
-`6.0.x` &#8658; N/A
-`5.0.x` &#8658; based on CometD 5.0.x - minimal ECMAScript 5 (`var` everywhere)
+`8.0.x` &#8658; based on CometD 8.0.x - full ECMAScript 6 (modules, classes, `let`, `const`, arrow functions)  
+`7.0.x` &#8658; based on CometD 7.0.x - minimal ECMAScript 6 (`let`, `const` and arrow functions)  
+`6.0.x` &#8658; N/A  
+`5.0.x` &#8658; based on CometD 5.0.x - minimal ECMAScript 5 (`var` everywhere)  
 
 Version `6.0.x` is not released to NPM since it's identical to `7.0.x`.  
 The `6.0.x` numbering exists only because the main CometD project, on the server side, is different from `7.0.x`, but on the client side there is no difference.

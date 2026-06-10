@@ -11,6 +11,7 @@ to use CometD with NPM.
 
 ### Versions
 
+* `9.0.x` &#8658; based on CometD 9.0.x - full ECMAScript 6 (modules, classes, `let`, `const`, arrow functions)
 * `8.0.x` &#8658; based on CometD 8.0.x - full ECMAScript 6 (modules, classes, `let`, `const`, arrow functions)
 * `7.0.x` &#8658; based on CometD 7.0.x - minimal ECMAScript 6 (`let`, `const` and arrow functions)
 * `6.0.x` &#8658; N/A
